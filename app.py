@@ -12,12 +12,12 @@ from sklearn.ensemble import RandomForestRegressor
 # ... (same train_and_save function from api.py)
 
 # Load or train model directly in Streamlit
-if not os.path.exists("model/salary_model.pkl"):
+if not os.path.exists("models/salary_model.pkl"):
     train_and_save()
 
-model    = joblib.load("model/salary_model.pkl")
-encoders = joblib.load("model/encoders.pkl")
-features = joblib.load("model/features.pkl")
+model    = joblib.load("models/salary_model.pkl")
+encoders = joblib.load("models/encoders.pkl")
+features = joblib.load("models/features.pkl")
 
 # Then on button click — predict directly, no API call needed
 if predict_btn:
