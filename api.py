@@ -9,14 +9,51 @@ import numpy as np
 import joblib
 import os
 
-# ─── LOAD MODEL FILES ────────────────────────────────
-print("⏳ Loading model...")
+# ─── LOAD OR TRAIN MODEL ON STARTUP ──────────────────
+import os, joblib, pandas as pd, numpy as np
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
 
-model    = joblib.load("models/salary_model.pkl")
-encoders = joblib.load("models/encoders.pkl")
-features = joblib.load("models/features.pkl")
+def train_and_save():
+    # Load data from URL — no file needed
+    url = "https://raw.githubusercontent.com/dsrscientist/dataset1/master/Salary_Data.csv"
+    df = pd.read_csv(url)
+    df = df.dropna()
+    df = df[df['Salary'] > 10000]
+    Q1, Q3 = df['Salary'].quantile(0.25), df['Salary'].quantile(0.75)
+    df = df[(df['Salary'] >= Q1 - 1.5*(Q3-Q1)) & (df['Salary'] <= Q3 + 1.5*(Q3-Q1))]
+    df['Salary_log'] = np.log1p(df['Salary'])
 
-print("✅ Model loaded successfully")
+    encoders = {}
+    for col in ['Gender', 'Education Level', 'Job Title']:
+        le = LabelEncoder()
+        df[col+'_enc'] = le.fit_transform(df[col])
+        encoders[col] = le
+
+    features = ['Age', 'Gender_enc', 'Education Level_enc',
+                'Job Title_enc', 'Years of Experience']
+    X, y = df[features], df['Salary_log']
+    X_train, _, y_train, _ = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    model = RandomForestRegressor(n_estimators=100, random_state=42)
+    model.fit(X_train, y_train)
+
+    os.makedirs("model", exist_ok=True)
+    joblib.dump(model,    "model/salary_model.pkl")
+    joblib.dump(encoders, "model/encoders.pkl")
+    joblib.dump(features, "model/features.pkl")
+    print("✅ Model trained and saved")
+
+# Train if model doesn't exist yet
+if not os.path.exists("model/salary_model.pkl"):
+    print("⏳ No model found — training now...")
+    train_and_save()
+
+model    = joblib.load("model/salary_model.pkl")
+encoders = joblib.load("model/encoders.pkl")
+features = joblib.load("model/features.pkl")
+print("✅ Model loaded and ready")
 
 # ─── CREATE FASTAPI APP ───────────────────────────────
 app = FastAPI(
@@ -141,5 +178,14 @@ def predict_salary(employee: EmployeeInput):
         predicted_salary=round(salary, 2),
         salary_range_low=round(salary * 0.90, 2),
         salary_range_high=round(salary * 1.10, 2)
+    )
+
+    # ─── ADD AT BOTTOM OF api.py ─────────────────────────
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "api:app",
+        host="0.0.0.0",
+        port=8000
     )
     
