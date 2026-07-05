@@ -7,8 +7,29 @@ import streamlit as st
 import requests
 import json
 
-# Your FastAPI URL — must be running before this
-API_URL = "http://localhost:8000/predict"
+import joblib, numpy as np
+from sklearn.ensemble import RandomForestRegressor
+# ... (same train_and_save function from api.py)
+
+# Load or train model directly in Streamlit
+if not os.path.exists("model/salary_model.pkl"):
+    train_and_save()
+
+model    = joblib.load("model/salary_model.pkl")
+encoders = joblib.load("model/encoders.pkl")
+features = joblib.load("model/features.pkl")
+
+# Then on button click — predict directly, no API call needed
+if predict_btn:
+    gender_enc = encoders["Gender"].transform([gender])[0]
+    edu_enc    = encoders["Education Level"].transform([education])[0]
+    job_enc    = encoders["Job Title"].transform([job_title])[0]
+
+    input_data = np.array([[age, gender_enc, edu_enc, job_enc, experience]])
+    log_salary  = model.predict(input_data)[0]
+    salary      = np.expm1(log_salary)
+
+    st.metric("💰 Predicted Salary", f"${salary:,.0f}")
 
 # ─── PAGE CONFIG ─────────────────────────────────────
 st.set_page_config(
