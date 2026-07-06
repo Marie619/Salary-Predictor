@@ -11,13 +11,13 @@ import joblib, numpy as np
 from sklearn.ensemble import RandomForestRegressor
 # ... (same train_and_save function from api.py)
 
-# Load or train model directly in Streamlit
-if not os.path.exists("models/salary_model.pkl"):
-    train_and_save()
+# This is the CORRECT way in your new app.py
+@st.cache_resource(show_spinner=False)
+def load_or_train_model():
+    # ... trains and returns model, encoders, features, metrics
 
-model    = joblib.load("models/salary_model.pkl")
-encoders = joblib.load("models/encoders.pkl")
-features = joblib.load("models/features.pkl")
+# Then called like this — no file paths needed
+ encoders, features, metrics = load_or_train_model()
 
 # Then on button click — predict directly, no API call needed
 if predict_btn:
