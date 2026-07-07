@@ -17,7 +17,7 @@ from sklearn.model_selection import train_test_split
 
 def train_and_save():
     # Load data from URL — no file needed
-    url = "https://raw.githubusercontent.com/dsrscientist/dataset1/master/Salary_Data.csv"
+    url = "data/salary_data.csv"
     df = pd.read_csv(url)
     df = df.dropna()
     df = df[df['Salary'] > 10000]
